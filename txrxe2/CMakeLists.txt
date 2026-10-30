@@ -5,8 +5,19 @@ project(txrxe2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(consumer consumer/main.cpp)
-add_executable(producer producer/main.cpp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(consumer
+    consumer/main.cpp
+    core/txrx.cpp
+    core/txrx.h
+)
+
+add_executable(producer
+    producer/main.cpp
+    core/txrx.cpp
+    core/txrx.h
+)
 
 include(GNUInstallDirs)
 install(TARGETS consumer
