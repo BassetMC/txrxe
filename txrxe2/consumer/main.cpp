@@ -25,7 +25,7 @@ void task() {
     int fd = open(fifoPath, O_RDONLY);
     if (fd == -1) {
         perror("open");
-        exit(1);
+        _exit(1);
     }
 
     for (;;) {
