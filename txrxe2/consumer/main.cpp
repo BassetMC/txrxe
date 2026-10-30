@@ -7,13 +7,14 @@
 #include <thread>
 #include <unistd.h>
 #include <atomic>
+#include <vector>
 
 
 std::atomic<bool> flag{true};
-std::atomic<long> total{0};
+std::atomic<uint64_t> total{0};
 std::atomic<int> pps{0};
 std::atomic<int> bps{0};
-
+int PACKET_SIZE = 4096;
 
 
 void task() {
@@ -31,8 +32,9 @@ void task() {
         if (!flag.load(std::memory_order_relaxed)) {
             continue;
         }
-        char buf[5] = {0};
-        read(fd, buf, 4);
+        std::vector<char> buf(PACKET_SIZE);
+
+        read(fd, buf.data(), buf.size());
         total++;
         // std::cout << "З FIFO: " << buf << '\n';
 
@@ -40,21 +42,35 @@ void task() {
 
 }
 
+void stats() {
+    uint64_t prev_total = 0;
+
+    for (;;) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        uint64_t curr_total = total.load(std::memory_order_relaxed);
+        uint64_t pps = curr_total - prev_total;
+        uint64_t bps = pps * PACKET_SIZE;
+        prev_total = curr_total;
+
+        std::cout << "total: " << curr_total << '\n'
+                  << "pps:   " << pps << " pkt/s\n"
+                  << "bps:   " << bps << " B/s\n\n"
+                  << std::flush;
+    }
+}
 
 int main() {
 
 
     std::thread t(task);
-    t.detach();
 
-    for (;;) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        std::cout << "total: " << total.load() << '\n'
-                  << "pps:   " << pps.exchange(0) << '\n'
-                  << "bps:   " << bps.exchange(0) << "\n\n"
-                  << std::flush;
-    }
+    std::thread t2(stats);
+    t.join();
+    t2.join();
+
+
 
     return 0;
 }
