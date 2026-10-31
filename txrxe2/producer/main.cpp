@@ -7,18 +7,33 @@
 #include <atomic>
 #include <thread>
 #include "core/txrx.h"
-
+#include "core/hash.h"
+#include <ctime>
 
 std::atomic<bool> flag{true};
 
-int PACKET_SIZE = 4096;
+int PAYLOAD_SIZE = 4096;
 const char* fifoPath = "/dev/shm/txrxe1";
 
 void task() {
     for (;;) {
+
+        long s_number = 0;
+
         if (!flag.load(std::memory_order_relaxed)) {
             continue;
         }
+
+        std::vector<int> payload(PAYLOAD_SIZE);
+
+        fill_vector(payload, -42000, 42000); // типу йде звук
+
+        p packet;
+
+        packet.s_number = s_number;
+        packet.crc = crc32(&payload, PAYLOAD_SIZE);
+        packet.timestamp = getTimestampSeconds();
+        packet.payload = payload;
 
         int fd = open(fifoPath, O_WRONLY);
         if (fd == -1) {
@@ -26,9 +41,10 @@ void task() {
             _exit(1);
         }
 
-        std::vector<char> msg(PACKET_SIZE, 'A');
+        auto data = serialize(packet, PAYLOAD_SIZE);
 
-        ssize_t n = write(fd, msg.data(), msg.size());
+        ssize_t n = write(fd, data.data(), data.size());
+        s_number++;
         if (n == -1) {
             perror("write");
         }

@@ -11,12 +11,16 @@ add_executable(consumer
     consumer/main.cpp
     core/txrx.cpp
     core/txrx.h
+    core/hash.cpp
+    core/hash.h
 )
 
 add_executable(producer
     producer/main.cpp
     core/txrx.cpp
     core/txrx.h
+    core/hash.cpp
+    core/hash.h
 )
 
 include(GNUInstallDirs)

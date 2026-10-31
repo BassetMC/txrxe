@@ -3,11 +3,11 @@
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
-#include <iostream>
 #include <random>
 #include <algorithm>
 #include <termios.h>
 #include <unistd.h>
+#include <chrono>
 
 std::vector<uint8_t> serialize(const p& data, size_t payload_size) {
     if (data.payload.size() != payload_size) {
@@ -98,4 +98,10 @@ int getch_unix() {
     int ch = getchar();
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Повертаємо налаштування
     return ch;
+}
+
+int64_t getTimestampSeconds() {
+    return std::chrono::duration_cast<std::chrono::seconds>(
+               std::chrono::system_clock::now().time_since_epoch()
+               ).count();
 }

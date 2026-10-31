@@ -1,6 +1,5 @@
 #include <boost/crc.hpp>
-#include <cstddef>
-#include <cstdint>
+
 uint32_t crc32(const void* data, std::size_t size) {
     // process_bytes потребує const void* data
     // можна було обійтися без boost но бібліотека на мою думку буде краще ніж функція з інтернету на константі
