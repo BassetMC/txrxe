@@ -25,7 +25,7 @@ bps:   1497488352 B/s
 
 
 ![Screenshot2.png](https://gitlab.com/BassetMC/txrxe/-/raw/master/Screenshot2.png)
-- вив з Producer
+- вид з Producer
 
 
 ![Screenshot3.png](https://gitlab.com/BassetMC/txrxe/-/raw/master/Screenshot3.png)
