@@ -24,3 +24,5 @@ p deserialize(const uint8_t* buffer, size_t buffer_size, size_t payload_size);
 void fill_vector(std::vector<int>& vec, int minVal, int maxVal);
 int getch_unix();
 int64_t getTimestampSeconds();
+bool write_all(int fd, const uint8_t* data, size_t size);
+bool read_all(int fd, uint8_t* buffer, size_t size);

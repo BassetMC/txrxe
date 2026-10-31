@@ -140,3 +140,34 @@ int64_t getTimestampSeconds() {
                std::chrono::system_clock::now().time_since_epoch()
                ).count();
 }
+
+bool write_all(int fd, const uint8_t* data, size_t size) {
+    size_t total_written = 0;
+    while (total_written < size) {
+        ssize_t n = write(fd, data + total_written, size - total_written);
+        if (n > 0) {
+            total_written += n;
+        } else if (n == -1 && errno == EINTR) {
+            continue; // Якщо виклик перервано сигналом
+        } else {
+            return false; // Помилка або канал закрито
+        }
+    }
+    return true;
+}
+bool read_all(int fd, uint8_t* buffer, size_t size) {
+    size_t total_read = 0;
+    while (total_read < size) {
+        ssize_t n = read(fd, buffer + total_read, size - total_read);
+        if (n > 0) {
+            total_read += n;
+        } else if (n == 0) {
+            return false; // EOF: Producer закрив канал
+        } else if (errno == EINTR) {
+            continue; // Якщо виклик перервано сигналом
+        } else {
+            return false; // Помилка читання
+        }
+    }
+    return true;
+}

@@ -37,16 +37,14 @@ void task() {
         packet.timestamp = getTimestampSeconds();
         packet.payload = payload;
 
-
         auto data = serialize(packet, PAYLOAD_SIZE);
 
-        ssize_t n = write(fd, data.data(), data.size());
-        s_number++;
-        if (n == -1) {
-            perror("write");
+        if (!write_all(fd, data.data(), data.size())) {
+            perror("write_all");
+            break;
         }
+        s_number++;
 
-        // close(fd);
     }
 
 }

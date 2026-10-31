@@ -34,19 +34,19 @@ void task() {
             continue;
         }
 
-        int res = read(fd, buf.data(), buf.size());
-        if (res == buf.size()) {
-            p packet = deserialize(buf.data(), buf.size(), PAYLOAD_SIZE);
-            if (
-                packet.crc == crc32(packet.payload.data(), PAYLOAD_SIZE * sizeof(int))
-                // && packet.s_number == total.load()
-                && packet.timestamp == getTimestampSeconds()
-                )
-            {
-                total++;
-            }
+        if (!read_all(fd, buf.data(), buf.size())) {
+            break;
+        }
 
+        p packet = deserialize(buf.data(), buf.size(), PAYLOAD_SIZE);
 
+        if (
+            packet.crc == crc32(packet.payload.data(), PAYLOAD_SIZE * sizeof(int))
+            && packet.s_number == total.load()
+            &&  packet.timestamp <= getTimestampSeconds() // перевірка чи пакет не прийшов з майбутнього
+            )
+        {
+            total++;
         }
 
     }
