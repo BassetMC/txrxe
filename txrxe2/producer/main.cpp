@@ -16,9 +16,9 @@ int PAYLOAD_SIZE = 4096;
 const char* fifoPath = "/dev/shm/txrxe1";
 
 void task() {
+    int fd = open(fifoPath, O_WRONLY);
+    long s_number = 0;
     for (;;) {
-
-        long s_number = 0;
 
         if (!flag.load(std::memory_order_relaxed)) {
             continue;
@@ -31,11 +31,11 @@ void task() {
         p packet;
 
         packet.s_number = s_number;
-        packet.crc = crc32(payload.data(), PAYLOAD_SIZE);
+        packet.crc = crc32(payload.data(), PAYLOAD_SIZE * sizeof(int));
         packet.timestamp = getTimestampSeconds();
         packet.payload = payload;
 
-        int fd = open(fifoPath, O_WRONLY);
+
         if (fd == -1) {
             perror("open");
             _exit(1);
@@ -49,7 +49,7 @@ void task() {
             perror("write");
         }
 
-        close(fd);
+        // close(fd);
     }
 
 }

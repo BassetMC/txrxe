@@ -35,11 +35,11 @@ void task() {
         std::vector<uint8_t> buf(get_packet_size(PAYLOAD_SIZE));
 
         int res = read(fd, buf.data(), buf.size());
-        if (res == 0) {
+        if (res == buf.size()) {
             p packet = deserialize(buf.data(), buf.size(), PAYLOAD_SIZE);
-            std::cout << packet.crc << " " << crc32(packet.payload.data(), PAYLOAD_SIZE) << "\n";
+            // std::cout << packet.crc << " " << crc32(packet.payload.data(), PAYLOAD_SIZE) << "\n";
             if (
-                packet.crc == crc32(&packet.payload, PAYLOAD_SIZE)
+                packet.crc == crc32(packet.payload.data(), PAYLOAD_SIZE * sizeof(int))
                 )
             {
                 total++;
