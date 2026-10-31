@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_compile_options(-O3 -march=native)
+# add_compile_options(-O3 -msse4.2)
 
 add_executable(consumer
     consumer/main.cpp
