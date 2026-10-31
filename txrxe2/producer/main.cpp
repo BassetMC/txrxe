@@ -21,12 +21,19 @@ void task() {
         perror("open");
         _exit(1);
     }
+
+    if (write(fd, &PAYLOAD_SIZE, (size_t)sizeof(int)) != sizeof(int)) {
+        perror("write PAYLOAD_SIZE");
+        _exit(1);
+    }
+
     long s_number = 0;
     std::vector<int> payload(PAYLOAD_SIZE);
     p packet;
     for (;;) {
 
         if (!flag.load(std::memory_order_relaxed)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
 
@@ -77,5 +84,6 @@ int main(int argc, char* argv[]) {
 
     }
 
+    t.join();
     return 0;
 }

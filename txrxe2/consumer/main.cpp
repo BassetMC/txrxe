@@ -27,10 +27,18 @@ void task() {
         perror("open");
         _exit(1);
     }
+
+    if (read(fd, &PAYLOAD_SIZE, sizeof(int)) != sizeof(int)) {
+        perror("read PAYLOAD_SIZE");
+        _exit(1);
+    }
+
+    std::cout << "PAYLOAD_SIZE = " << PAYLOAD_SIZE << "\n";
     std::vector<uint8_t> buf(get_packet_size(PAYLOAD_SIZE));
 
     for (;;) {
         if (!flag.load(std::memory_order_relaxed)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
 
@@ -73,18 +81,8 @@ void stats() {
 
 
 int main(int argc, char* argv[]) {
-    if (argc > 1) {
-        int val = std::atoi(argv[1]);
-        if (val > 0) {
-            PAYLOAD_SIZE = val;
-        } else {
-            std::cerr << "Некоректний PAYLOAD_SIZE, використовується за замовчуванням: " << PAYLOAD_SIZE << "\n";
-        }
-    }
-    std::cout << "PAYLOAD_SIZE = " << PAYLOAD_SIZE << "\n";
 
     std::thread t(task);
-
 
     std::thread t2(stats);
     for (;;) {
@@ -92,16 +90,14 @@ int main(int argc, char* argv[]) {
 
         if (key == 27) { // 27 — ASCII-код клавіші ESC
             std::cout << "Натиснуто ESC. Вихід з програми.\n";
-            break;
+            unlink(fifoPath);
+            _exit(0);
         }
         else {
             flag = !flag;
             std::cout << "Натиснуто не ESC. flag зараз: " << flag <<"\n";
         }
-
     }
-
-    unlink(fifoPath);
 
     return 0;
 }
