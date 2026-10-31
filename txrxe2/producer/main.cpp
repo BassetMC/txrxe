@@ -17,29 +17,26 @@ const char* fifoPath = "/dev/shm/txrxe1";
 
 void task() {
     int fd = open(fifoPath, O_WRONLY);
+    if (fd == -1) {
+        perror("open");
+        _exit(1);
+    }
     long s_number = 0;
+    std::vector<int> payload(PAYLOAD_SIZE);
+    p packet;
     for (;;) {
 
         if (!flag.load(std::memory_order_relaxed)) {
             continue;
         }
 
-        std::vector<int> payload(PAYLOAD_SIZE);
-
         fill_vector(payload, -42000, 42000); // типу йде звук
-
-        p packet;
 
         packet.s_number = s_number;
         packet.crc = crc32(payload.data(), PAYLOAD_SIZE * sizeof(int));
         packet.timestamp = getTimestampSeconds();
         packet.payload = payload;
 
-
-        if (fd == -1) {
-            perror("open");
-            _exit(1);
-        }
 
         auto data = serialize(packet, PAYLOAD_SIZE);
 
@@ -55,7 +52,16 @@ void task() {
 }
 
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc > 1) {
+        int val = std::atoi(argv[1]);
+        if (val > 0) {
+            PAYLOAD_SIZE = val;
+        } else {
+            std::cerr << "Некоректний PAYLOAD_SIZE, використовується за замовчуванням: " << PAYLOAD_SIZE << "\n";
+        }
+    }
+    std::cout << "PAYLOAD_SIZE = " << PAYLOAD_SIZE << "\n";
 
     std::thread t(task);
 

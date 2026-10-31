@@ -27,19 +27,20 @@ void task() {
         perror("open");
         _exit(1);
     }
+    std::vector<uint8_t> buf(get_packet_size(PAYLOAD_SIZE));
 
     for (;;) {
         if (!flag.load(std::memory_order_relaxed)) {
             continue;
         }
-        std::vector<uint8_t> buf(get_packet_size(PAYLOAD_SIZE));
 
         int res = read(fd, buf.data(), buf.size());
         if (res == buf.size()) {
             p packet = deserialize(buf.data(), buf.size(), PAYLOAD_SIZE);
-            // std::cout << packet.crc << " " << crc32(packet.payload.data(), PAYLOAD_SIZE) << "\n";
             if (
                 packet.crc == crc32(packet.payload.data(), PAYLOAD_SIZE * sizeof(int))
+                // && packet.s_number == total.load()
+                && packet.timestamp == getTimestampSeconds()
                 )
             {
                 total++;
@@ -71,8 +72,16 @@ void stats() {
 }
 
 
-int main() {
-
+int main(int argc, char* argv[]) {
+    if (argc > 1) {
+        int val = std::atoi(argv[1]);
+        if (val > 0) {
+            PAYLOAD_SIZE = val;
+        } else {
+            std::cerr << "Некоректний PAYLOAD_SIZE, використовується за замовчуванням: " << PAYLOAD_SIZE << "\n";
+        }
+    }
+    std::cout << "PAYLOAD_SIZE = " << PAYLOAD_SIZE << "\n";
 
     std::thread t(task);
 
