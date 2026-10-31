@@ -71,14 +71,57 @@ p deserialize(const uint8_t* buffer, size_t buffer_size, size_t payload_size) {
 }
 
 void fill_vector(std::vector<int>& vec, int minVal, int maxVal) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
+    // 8 незалежних ліній стану Xorshift128+ (рівно під 256-бітні регістри AVX2)
+    struct alignas(32) SimdRngState {
+        uint64_t s0[8];
+        uint64_t s1[8];
 
-    std::uniform_int_distribution<int> dist(minVal, maxVal);
+        SimdRngState() {
+            std::random_device rd;
+            for (int i = 0; i < 8; ++i) {
+                s0[i] = (static_cast<uint64_t>(rd()) << 32) | rd();
+                s1[i] = (static_cast<uint64_t>(rd()) << 32) | rd();
+                if (s0[i] == 0 && s1[i] == 0) s0[i] = 1; // стан не має бути нульовим
+            }
+        }
+    };
 
-    std::generate(vec.begin(), vec.end(), [&]() {
-        return dist(gen);
-    });
+    // Ініціалізується один раз на потік
+    static thread_local SimdRngState rng;
+
+    const uint64_t range = static_cast<uint64_t>(static_cast<int64_t>(maxVal) - static_cast<int64_t>(minVal) + 1);
+    int* __restrict dst = vec.data();
+    size_t n = vec.size();
+
+    size_t i = 0;
+    // Основний SIMD-цикл: генерує по 8 випадкових чисел за ітерацію
+    for (; i + 8 <= n; i += 8) {
+        for (int k = 0; k < 8; ++k) {
+            uint64_t x = rng.s0[k];
+            const uint64_t y = rng.s1[k];
+            rng.s0[k] = y;
+            x ^= x << 23;
+            uint64_t s1_new = x ^ y ^ (x >> 17) ^ (y >> 26);
+            rng.s1[k] = s1_new;
+
+            // 32 випадкові біти з 64-бітного стану
+            uint32_t r = static_cast<uint32_t>((s1_new + y) >> 32);
+
+            // Метод Леміра: рівномірне масштабування в [minVal, maxVal] через множення і зсув (без ділення!)
+            dst[i + k] = minVal + static_cast<int>((static_cast<uint64_t>(r) * range) >> 32);
+        }
+    }
+
+    // Обробка хвоста, якщо розмір вектора не кратний 8
+    for (; i < n; ++i) {
+        uint64_t x = rng.s0[0];
+        const uint64_t y = rng.s1[0];
+        rng.s0[0] = y;
+        x ^= x << 23;
+        rng.s1[0] = x ^ y ^ (x >> 17) ^ (y >> 26);
+        uint32_t r = static_cast<uint32_t>((rng.s1[0] + y) >> 32);
+        dst[i] = minVal + static_cast<int>((static_cast<uint64_t>(r) * range) >> 32);
+    }
 }
 
 int getch_unix() {
