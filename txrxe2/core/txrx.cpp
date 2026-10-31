@@ -70,14 +70,6 @@ p deserialize(const uint8_t* buffer, size_t buffer_size, size_t payload_size) {
     return result;
 }
 
-constexpr size_t get_header_size() noexcept {
-    return sizeof(p::crc) + sizeof(p::timestamp) + sizeof(p::s_number);
-}
-
-constexpr size_t get_packet_size(size_t payload_size) noexcept {
-    return get_header_size() + payload_size * sizeof(decltype(p::payload)::value_type);
-}
-
 void fill_vector(std::vector<int>& vec, int minVal, int maxVal) {
     static std::random_device rd;
     static std::mt19937 gen(rd());

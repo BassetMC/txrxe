@@ -9,12 +9,12 @@
 #include <atomic>
 #include <vector>
 #include "core/txrx.h"
+#include "core/hash.h"
 
 std::atomic<bool> flag{true};
 std::atomic<uint64_t> total{0};
-std::atomic<int> pps{0};
-std::atomic<int> bps{0};
-int PACKET_SIZE = 4096;
+
+int PAYLOAD_SIZE = 4096;
 const char* fifoPath = "/dev/shm/txrxe1";
 
 void task() {
@@ -32,10 +32,21 @@ void task() {
         if (!flag.load(std::memory_order_relaxed)) {
             continue;
         }
-        std::vector<char> buf(PACKET_SIZE);
+        std::vector<uint8_t> buf(get_packet_size(PAYLOAD_SIZE));
 
         int res = read(fd, buf.data(), buf.size());
-        if (res == 0) total++;
+        if (res == 0) {
+            p packet = deserialize(buf.data(), buf.size(), PAYLOAD_SIZE);
+            std::cout << packet.crc << " " << crc32(packet.payload.data(), PAYLOAD_SIZE) << "\n";
+            if (
+                packet.crc == crc32(&packet.payload, PAYLOAD_SIZE)
+                )
+            {
+                total++;
+            }
+
+
+        }
 
     }
 
@@ -49,7 +60,7 @@ void stats() {
 
         uint64_t curr_total = total.load(std::memory_order_relaxed);
         uint64_t pps = curr_total - prev_total;
-        uint64_t bps = pps * PACKET_SIZE;
+        uint64_t bps = pps * get_packet_size(PAYLOAD_SIZE);
         prev_total = curr_total;
 
         std::cout << "total: " << curr_total << '\n'

@@ -31,7 +31,7 @@ void task() {
         p packet;
 
         packet.s_number = s_number;
-        packet.crc = crc32(&payload, PAYLOAD_SIZE);
+        packet.crc = crc32(payload.data(), PAYLOAD_SIZE);
         packet.timestamp = getTimestampSeconds();
         packet.payload = payload;
 
