@@ -35,7 +35,7 @@ void task() {
 
     std::cout << "PAYLOAD_SIZE = " << PAYLOAD_SIZE << "\n";
     std::vector<uint8_t> buf(get_packet_size(PAYLOAD_SIZE));
-
+    p packet(PAYLOAD_SIZE);
     for (;;) {
         if (!flag.load(std::memory_order_relaxed)) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -46,7 +46,7 @@ void task() {
             break;
         }
 
-        p packet = deserialize(buf.data(), buf.size(), PAYLOAD_SIZE);
+        deserialize(buf.data(), buf.size(), PAYLOAD_SIZE, packet);
 
         if (
             packet.crc == crc32(packet.payload.data(), PAYLOAD_SIZE * sizeof(int))

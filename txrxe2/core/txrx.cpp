@@ -4,12 +4,18 @@
 #include <cstring>
 #include <stdexcept>
 #include <random>
-#include <algorithm>
 #include <termios.h>
 #include <unistd.h>
 #include <chrono>
 
-std::vector<uint8_t> serialize(const p& data, size_t payload_size) {
+p::p(size_t payload_size) {
+    this->crc = 0;
+    this->s_number = 0;
+    this->timestamp = 0;
+    this->payload.resize(payload_size);
+}
+
+void serialize(const p& data, size_t payload_size, std::vector<uint8_t> &buffer) {
     if (data.payload.size() != payload_size) {
         throw std::invalid_argument("Payload size does not match g_payload_size");
     }
@@ -20,7 +26,6 @@ std::vector<uint8_t> serialize(const p& data, size_t payload_size) {
                               sizeof(data.s_number) +
                               payload_bytes;
 
-    std::vector<uint8_t> buffer(total_size);
     size_t offset = 0;
 
     auto write_field = [&](const void* src, size_t size) {
@@ -36,10 +41,9 @@ std::vector<uint8_t> serialize(const p& data, size_t payload_size) {
         write_field(data.payload.data(), payload_bytes);
     }
 
-    return buffer;
 }
 
-p deserialize(const uint8_t* buffer, size_t buffer_size, size_t payload_size) {
+void deserialize(const uint8_t* buffer, size_t buffer_size, size_t payload_size, p& result) {
     const size_t payload_bytes = payload_size * sizeof(int);
     const size_t expected_size = sizeof(uint32_t) +
                                  sizeof(int64_t) +
@@ -50,7 +54,7 @@ p deserialize(const uint8_t* buffer, size_t buffer_size, size_t payload_size) {
         throw std::runtime_error("Buffer is too small for deserialization");
     }
 
-    p result;
+
     size_t offset = 0;
 
     auto read_field = [&](void* dst, size_t size) {
@@ -67,7 +71,6 @@ p deserialize(const uint8_t* buffer, size_t buffer_size, size_t payload_size) {
         read_field(result.payload.data(), payload_bytes);
     }
 
-    return result;
 }
 
 void fill_vector(std::vector<int>& vec, int minVal, int maxVal) {

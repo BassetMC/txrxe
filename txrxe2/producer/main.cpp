@@ -13,9 +13,9 @@
 std::atomic<bool> flag{true};
 
 int PAYLOAD_SIZE = 4096;
-const char* fifoPath = "/dev/shm/txrxe1";
 
 void task() {
+    const char* fifoPath = "/dev/shm/txrxe1";
     int fd = open(fifoPath, O_WRONLY);
     if (fd == -1) {
         perror("open");
@@ -28,8 +28,8 @@ void task() {
     }
 
     long s_number = 0;
-    std::vector<int> payload(PAYLOAD_SIZE);
-    p packet;
+    p packet(PAYLOAD_SIZE);
+    std::vector<uint8_t> buf(get_packet_size(PAYLOAD_SIZE));
     for (;;) {
 
         if (!flag.load(std::memory_order_relaxed)) {
@@ -37,16 +37,15 @@ void task() {
             continue;
         }
 
-        fill_vector(payload, -42000, 42000); // типу йде звук
+        fill_vector(packet.payload, -42000, 42000); // типу йде звук
 
         packet.s_number = s_number;
-        packet.crc = crc32(payload.data(), PAYLOAD_SIZE * sizeof(int));
+        packet.crc = crc32(packet.payload.data(), PAYLOAD_SIZE * sizeof(int));
         packet.timestamp = getTimestampSeconds();
-        packet.payload = payload;
 
-        auto data = serialize(packet, PAYLOAD_SIZE);
+        serialize(packet, PAYLOAD_SIZE, buf);
 
-        if (!write_all(fd, data.data(), data.size())) {
+        if (!write_all(fd, buf.data(), buf.size())) {
             perror("write_all");
             break;
         }
@@ -75,7 +74,7 @@ int main(int argc, char* argv[]) {
 
         if (key == 27) { // 27 — ASCII-код клавіші ESC
             std::cout << "Натиснуто ESC. Вихід з програми.\n";
-            break;
+            _exit(0);
         }
         else {
             flag = !flag;
